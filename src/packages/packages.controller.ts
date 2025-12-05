@@ -7,6 +7,7 @@ import {
   Put,
   Query,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { PackagesService } from './packages.service';
 import {
@@ -15,11 +16,15 @@ import {
   ApiQuery,
   ApiParam,
   ApiBody,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { ReportProblemDto } from './dto/report-problem.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('packages')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('packages')
 export class PackagesController {
   constructor(private readonly packagesService: PackagesService) {}

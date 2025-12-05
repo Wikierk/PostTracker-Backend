@@ -3,20 +3,41 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
+@ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @ApiOperation({ summary: 'Tworzenie nowego użytkownika (Admin)' })
+  @ApiResponse({ status: 201, description: 'Użytkownik został utworzony.' })
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
+  }
+
+  @ApiOperation({ summary: 'Pobranie listy wszystkich pracowników (Admin)' })
+  @Get()
+  findAll() {
+    return this.usersService.findAll();
+  }
+
+  @ApiOperation({ summary: 'Pobranie szczegółów pracownika' })
+  @Get(':id')
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.usersService.findById(id);
+  }
+
+  @ApiOperation({ summary: 'Usunięcie pracownika (Admin)' })
+  @Delete(':id')
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.usersService.remove(id);
   }
 }
