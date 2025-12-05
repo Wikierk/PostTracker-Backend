@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    container_name: post_tracker_db
+    environment:
+      POSTGRES_USER: ${DB_USER:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password123}
+      POSTGRES_DB: ${DB_NAME:-posttracker}
+    ports:
+      - '5435:5432'
+    volumes:
+      - pgdata_v2:/var/lib/postgresql/data
+
+volumes:
+  pgdata_v2:
