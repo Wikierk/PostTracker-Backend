@@ -28,6 +28,9 @@ export class Package {
   @Column()
   pickupPoint: string;
 
+  @Column()
+  pickupCode: string;
+
   @Column({ nullable: true })
   photoUrl: string;
 

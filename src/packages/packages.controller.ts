@@ -26,6 +26,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import { DeliverPackageDto } from './dto/deliver-package.dto';
 
 @ApiTags('packages')
 @ApiBearerAuth()
@@ -104,11 +105,16 @@ export class PackagesController {
     return this.packagesService.remove(id);
   }
 
-  @ApiOperation({ summary: 'Oznaczenie jako odebranej (Recepcjonista)' })
+  @ApiOperation({
+    summary: 'Wydanie przesyłki po weryfikacji kodu (Recepcjonista)',
+  })
   @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN)
   @Put(':id/deliver')
-  markAsDelivered(@Param('id', ParseUUIDPipe) id: string) {
-    return this.packagesService.markAsDelivered(id);
+  markAsDelivered(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() deliverDto: DeliverPackageDto,
+  ) {
+    return this.packagesService.markAsDelivered(id, deliverDto);
   }
 
   @ApiOperation({ summary: 'Zgłoszenie problemu (Pracownik)' })

@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike, Between, FindOptionsWhere } from 'typeorm';
 import { Package, PackageStatus } from './entities/package.entity';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
+import { DeliverPackageDto } from './dto/deliver-package.dto';
 
 @Injectable()
 export class PackagesService {
@@ -12,8 +17,17 @@ export class PackagesService {
     private packagesRepository: Repository<Package>,
   ) {}
 
+  private generatePickupCode(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
   async create(createPackageDto: CreatePackageDto) {
-    const newPackage = this.packagesRepository.create(createPackageDto);
+    const pickupCode = this.generatePickupCode();
+
+    const newPackage = this.packagesRepository.create({
+      ...createPackageDto,
+      pickupCode,
+    });
+
     return this.packagesRepository.save(newPackage);
   }
 
@@ -72,8 +86,17 @@ export class PackagesService {
     return this.packagesRepository.remove(pkg);
   }
 
-  async markAsDelivered(id: string) {
+  async markAsDelivered(id: string, deliverDto: DeliverPackageDto) {
     const pkg = await this.findOne(id);
+
+    if (pkg.status === PackageStatus.DELIVERED) {
+      throw new BadRequestException('Paczka została już odebrana');
+    }
+
+    if (pkg.pickupCode !== deliverDto.pickupCode) {
+      throw new BadRequestException('Nieprawidłowy kod odbioru!');
+    }
+
     pkg.status = PackageStatus.DELIVERED;
     return this.packagesRepository.save(pkg);
   }
