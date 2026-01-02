@@ -31,7 +31,6 @@ import { UserRole } from '../users/entities/user.entity';
 export class PickupPointsController {
   constructor(private readonly pickupPointsService: PickupPointsService) {}
 
-  // 👇 Endpoint dla GPS w telefonie
   @ApiOperation({
     summary: 'Znajdź najbliższy punkt odbioru na podstawie koordynatów',
   })
@@ -45,8 +44,6 @@ export class PickupPointsController {
   ) {
     return this.pickupPointsService.findNearest(lat, lon);
   }
-
-  // --- CRUD (Tylko Admin) ---
 
   @ApiOperation({ summary: 'Dodaj nowy punkt odbioru (Admin)' })
   @Roles(UserRole.ADMIN)
