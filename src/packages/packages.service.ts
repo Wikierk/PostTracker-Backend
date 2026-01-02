@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, ILike, Between, FindOptionsWhere } from 'typeorm';
 import { Package, PackageStatus } from './entities/package.entity';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
@@ -17,8 +17,28 @@ export class PackagesService {
     return this.packagesRepository.save(newPackage);
   }
 
-  findAll() {
+  async findAll(userId?: string, search?: string) {
+    let whereClause: FindOptionsWhere<Package> | FindOptionsWhere<Package>[] =
+      {};
+
+    if (userId) {
+      whereClause = { recipientId: userId };
+
+      if (search) {
+        whereClause = [
+          { recipientId: userId, sender: ILike(`%${search}%`) },
+          { recipientId: userId, trackingNumber: ILike(`%${search}%`) },
+        ];
+      }
+    } else if (search) {
+      whereClause = [
+        { sender: ILike(`%${search}%`) },
+        { trackingNumber: ILike(`%${search}%`) },
+      ];
+    }
+
     return this.packagesRepository.find({
+      where: whereClause,
       relations: ['recipient'],
       order: { createdAt: 'DESC' },
     });
@@ -63,5 +83,38 @@ export class PackagesService {
     pkg.status = PackageStatus.PROBLEM;
     console.log(`Zgłoszono problem dla paczki ${id}: ${description}`);
     return this.packagesRepository.save(pkg);
+  }
+
+  async getAdminStats() {
+    const date = new Date();
+    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+    const packagesThisMonth = await this.packagesRepository.count({
+      where: {
+        createdAt: Between(firstDay, lastDay),
+      },
+    });
+
+    return { packagesThisMonth };
+  }
+
+  async getReceptionistStats() {
+    const toDeliver = await this.packagesRepository.count({
+      where: { status: PackageStatus.REGISTERED },
+    });
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const receivedToday = await this.packagesRepository.count({
+      where: {
+        createdAt: Between(startOfDay, endOfDay),
+      },
+    });
+
+    return { toDeliver, receivedToday };
   }
 }

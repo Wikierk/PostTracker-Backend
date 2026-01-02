@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 
@@ -57,5 +57,11 @@ export class UsersService {
       return result;
     }
     return null;
+  }
+  async countEmployees() {
+    const count = await this.usersRepository.count({
+      where: { role: UserRole.EMPLOYEE },
+    });
+    return { count };
   }
 }

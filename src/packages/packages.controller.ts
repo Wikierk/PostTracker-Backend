@@ -34,6 +34,25 @@ import { UserRole } from '../users/entities/user.entity';
 export class PackagesController {
   constructor(private readonly packagesService: PackagesService) {}
 
+  @ApiOperation({
+    summary:
+      'Pobierz statystyki dla Recepcjonisty (Do wydania / Przyjęte dziś)',
+  })
+  @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN)
+  @Get('stats/receptionist')
+  getReceptionistStats() {
+    return this.packagesService.getReceptionistStats();
+  }
+
+  @ApiOperation({
+    summary: 'Pobierz statystyki paczek dla Admina (Ilość w miesiącu)',
+  })
+  @Roles(UserRole.ADMIN)
+  @Get('stats/admin-packages')
+  getAdminPackageStats() {
+    return this.packagesService.getAdminStats();
+  }
+
   @ApiOperation({ summary: 'Rejestracja nowej przesyłki (Recepcjonista)' })
   @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN)
   @Post()
@@ -41,10 +60,21 @@ export class PackagesController {
     return this.packagesService.create(createPackageDto);
   }
 
-  @ApiOperation({ summary: 'Pobranie listy przesyłek' })
-  @ApiQuery({ name: 'userId', required: false })
+  @ApiOperation({
+    summary: 'Pobranie listy przesyłek z opcjonalnym wyszukiwaniem',
+  })
+  @ApiQuery({
+    name: 'userId',
+    required: false,
+    description: 'Filtruj po ID pracownika',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Szukaj po nadawcy lub numerze śledzenia',
+  })
   @Get()
-  findAll(@Query('userId') userId?: string) {
+  findAll(@Query('userId') userId?: string, @Query('search') search?: string) {
     if (userId) {
       return this.packagesService.findMyPackages(userId);
     }
@@ -57,8 +87,8 @@ export class PackagesController {
     return this.packagesService.findOne(id);
   }
 
-  @ApiOperation({ summary: 'Edycja danych przesyłki (Tylko Admin)' })
-  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Edycja danych przesyłki (Tylko Recepcjonista)' })
+  @Roles(UserRole.RECEPTIONIST)
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -67,8 +97,8 @@ export class PackagesController {
     return this.packagesService.update(id, updatePackageDto);
   }
 
-  @ApiOperation({ summary: 'Usunięcie przesyłki (Tylko Admin)' })
-  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Usunięcie przesyłki (Tylko Recepcjonista)' })
+  @Roles(UserRole.RECEPTIONIST)
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.packagesService.remove(id);

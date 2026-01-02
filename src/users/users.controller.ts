@@ -10,11 +10,20 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { UserRole } from './entities/user.entity';
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @ApiOperation({ summary: 'Pobierz liczbę pracowników (Admin)' })
+  @Roles(UserRole.ADMIN)
+  @Get('stats/count')
+  countEmployees() {
+    return this.usersService.countEmployees();
+  }
 
   @ApiOperation({ summary: 'Tworzenie nowego użytkownika (Admin)' })
   @ApiResponse({ status: 201, description: 'Użytkownik został utworzony.' })
