@@ -8,6 +8,7 @@ import { Package } from './packages/entities/package.entity';
 import { AuthModule } from './auth/auth.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { PickupPointsModule } from './pickup-points/pickup-points.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { join } from 'path';
     UsersModule,
     PackagesModule,
     AuthModule,
+    PickupPointsModule,
   ],
 })
 export class AppModule {}
