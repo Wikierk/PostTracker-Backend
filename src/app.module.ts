@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { PickupPointsModule } from './pickup-points/pickup-points.module';
+import { PickupPoint } from './pickup-points/entities/pickup-point.entity';
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { PickupPointsModule } from './pickup-points/pickup-points.module';
         username: configService.get<string>('DB_USER'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
-        entities: [User, Package],
+        entities: [User, Package, PickupPoint],
         synchronize: true,
       }),
       inject: [ConfigService],
