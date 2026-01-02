@@ -10,8 +10,9 @@ import {
   Patch,
   Delete,
   UseGuards,
-  UploadedFile,
   UseInterceptors,
+  UploadedFile,
+  Request,
 } from '@nestjs/common';
 import { PackagesService } from './packages.service';
 import {
@@ -20,45 +21,53 @@ import {
   ApiQuery,
   ApiParam,
   ApiBearerAuth,
-  ApiBody,
   ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { ReportProblemDto } from './dto/report-problem.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
+import { DeliverPackageDto } from './dto/deliver-package.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
-import { DeliverPackageDto } from './dto/deliver-package.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
 @ApiTags('packages')
 @ApiBearerAuth()
-//@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('packages')
 export class PackagesController {
   constructor(private readonly packagesService: PackagesService) {}
 
-  @ApiOperation({
-    summary:
-      'Pobierz statystyki dla Recepcjonisty (Do wydania / Przyjęte dziś)',
-  })
+  @ApiOperation({ summary: 'Pobierz statystyki dla Recepcjonisty' })
   @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN)
   @Get('stats/receptionist')
   getReceptionistStats() {
     return this.packagesService.getReceptionistStats();
   }
 
-  @ApiOperation({
-    summary: 'Pobierz statystyki paczek dla Admina (Ilość w miesiącu)',
-  })
+  @ApiOperation({ summary: 'Pobierz statystyki paczek dla Admina' })
   @Roles(UserRole.ADMIN)
   @Get('stats/admin-packages')
   getAdminPackageStats() {
     return this.packagesService.getAdminStats();
+  }
+
+  @ApiOperation({ summary: 'Pobierz listę zgłoszonych problemów' })
+  @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN)
+  @Get('problems')
+  findProblems(@Request() req: any) {
+    const user = req.user;
+
+    if (user.role === UserRole.ADMIN) {
+      return this.packagesService.findProblems();
+    }
+
+    return this.packagesService.findProblems(user.userId);
   }
 
   @ApiOperation({
@@ -112,35 +121,22 @@ export class PackagesController {
     return this.packagesService.create(createPackageDto);
   }
 
-  @ApiOperation({
-    summary: 'Pobranie listy przesyłek z opcjonalnym wyszukiwaniem',
-  })
-  @ApiQuery({
-    name: 'userId',
-    required: false,
-    description: 'Filtruj po ID pracownika',
-  })
-  @ApiQuery({
-    name: 'search',
-    required: false,
-    description: 'Szukaj po nadawcy lub numerze śledzenia',
-  })
+  @ApiOperation({ summary: 'Pobranie listy przesyłek' })
+  @ApiQuery({ name: 'userId', required: false })
+  @ApiQuery({ name: 'search', required: false })
   @Get()
   findAll(@Query('userId') userId?: string, @Query('search') search?: string) {
-    if (userId) {
-      return this.packagesService.findMyPackages(userId);
-    }
-    return this.packagesService.findAll();
+    return this.packagesService.findAll(userId, search);
   }
 
-  @ApiOperation({ summary: 'Pobranie szczegółów przesyłki' })
+  @ApiOperation({ summary: 'Pobranie szczegółów' })
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.packagesService.findOne(id);
   }
 
-  @ApiOperation({ summary: 'Edycja danych przesyłki (Tylko Recepcjonista)' })
-  @Roles(UserRole.RECEPTIONIST)
+  @ApiOperation({ summary: 'Edycja danych' })
+  @Roles(UserRole.ADMIN)
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -149,26 +145,26 @@ export class PackagesController {
     return this.packagesService.update(id, updatePackageDto);
   }
 
-  @ApiOperation({ summary: 'Usunięcie przesyłki (Tylko Recepcjonista)' })
-  @Roles(UserRole.RECEPTIONIST)
+  @ApiOperation({ summary: 'Usunięcie przesyłki' })
+  @Roles(UserRole.ADMIN)
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.packagesService.remove(id);
   }
 
-  @ApiOperation({
-    summary: 'Wydanie przesyłki po weryfikacji kodu (Recepcjonista)',
-  })
+  @ApiOperation({ summary: 'Wydanie przesyłki (wymaga kodu odbioru)' })
   @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN)
   @Put(':id/deliver')
   markAsDelivered(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() deliverDto: DeliverPackageDto,
+    @Request() req: any,
   ) {
-    return this.packagesService.markAsDelivered(id, deliverDto);
+    const receptionistId = req.user.userId;
+    return this.packagesService.markAsDelivered(id, deliverDto, receptionistId);
   }
 
-  @ApiOperation({ summary: 'Zgłoszenie problemu (Pracownik)' })
+  @ApiOperation({ summary: 'Zgłoszenie problemu' })
   @Roles(UserRole.EMPLOYEE, UserRole.ADMIN)
   @Put(':id/problem')
   reportProblem(

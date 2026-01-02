@@ -47,6 +47,15 @@ export class Package {
   @Column()
   recipientId: string;
 
+  @ManyToOne(() => User, { nullable: true })
+  issuedBy: User;
+
+  @Column({ nullable: true })
+  issuedById: string;
+
+  @Column({ nullable: true })
+  problemDescription: string;
+
   @CreateDateColumn()
   createdAt: Date;
 
