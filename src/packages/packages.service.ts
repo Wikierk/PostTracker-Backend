@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, Between, FindOptionsWhere } from 'typeorm';
+import { Repository, ILike, Between, FindOptionsWhere, In } from 'typeorm';
 import { Package, PackageStatus } from './entities/package.entity';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
@@ -16,6 +16,8 @@ export class PackagesService {
   constructor(
     @InjectRepository(Package)
     private packagesRepository: Repository<Package>,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
   ) {}
 
   private generatePickupCode(): string {
@@ -130,10 +132,11 @@ export class PackagesService {
     const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
     const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
+    const employeesCount = await this.usersRepository.count();
     const packagesThisMonth = await this.packagesRepository.count({
       where: { createdAt: Between(firstDay, lastDay) },
     });
-    return { packagesThisMonth };
+    return { employeesCount, packagesThisMonth };
   }
 
   async getReceptionistStats() {

@@ -52,7 +52,7 @@ export class PackagesController {
 
   @ApiOperation({ summary: 'Pobierz statystyki paczek dla Admina' })
   @Roles(UserRole.ADMIN)
-  @Get('stats/admin-packages')
+  @Get('stats/admin')
   getAdminPackageStats() {
     return this.packagesService.getAdminStats();
   }
