@@ -53,8 +53,8 @@ export class Package {
   @Column({ nullable: true })
   issuedById: string;
 
-  @Column({ nullable: true })
-  problemDescription: string;
+  @Column({ type: 'varchar', nullable: true })
+  problemDescription: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

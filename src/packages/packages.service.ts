@@ -74,7 +74,26 @@ export class PackagesService {
 
   async update(id: string, updatePackageDto: UpdatePackageDto) {
     const pkg = await this.findOne(id);
-    Object.assign(pkg, updatePackageDto);
+    
+    if (updatePackageDto.trackingNumber !== undefined)
+      pkg.trackingNumber = updatePackageDto.trackingNumber;
+    if (updatePackageDto.sender !== undefined)
+      pkg.sender = updatePackageDto.sender;
+    if (updatePackageDto.pickupPoint !== undefined)
+      pkg.pickupPoint = updatePackageDto.pickupPoint;
+    if (updatePackageDto.photoUrl !== undefined)
+      pkg.photoUrl = updatePackageDto.photoUrl;
+
+    if (updatePackageDto.recipientId !== undefined) {
+      const recipient = await this.usersRepository.findOne({
+        where: { id: updatePackageDto.recipientId },
+      });
+      if (!recipient)
+        throw new NotFoundException('Odbiorca nie został znaleziony');
+      pkg.recipient = recipient;
+      pkg.recipientId = updatePackageDto.recipientId;
+    }
+
     return this.packagesRepository.save(pkg);
   }
 
@@ -108,6 +127,16 @@ export class PackagesService {
     const pkg = await this.findOne(id);
     pkg.status = PackageStatus.PROBLEM;
     pkg.problemDescription = description;
+    return this.packagesRepository.save(pkg);
+  }
+
+  async resolveProblem(id: string) {
+    const pkg = await this.findOne(id);
+    if (pkg.status !== PackageStatus.PROBLEM) {
+      throw new BadRequestException('Paczka nie ma zgłoszonego problemu');
+    }
+    pkg.status = PackageStatus.REGISTERED;
+    pkg.problemDescription = null;
     return this.packagesRepository.save(pkg);
   }
 

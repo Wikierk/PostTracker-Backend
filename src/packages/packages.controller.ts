@@ -136,12 +136,53 @@ export class PackagesController {
   }
 
   @ApiOperation({ summary: 'Edycja danych' })
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        trackingNumber: { type: 'string' },
+        sender: { type: 'string' },
+        recipientId: { type: 'string', format: 'uuid' },
+        pickupPoint: { type: 'string' },
+        photo: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('photo', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, callback) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          const filename = `${uniqueSuffix}${ext}`;
+          callback(null, filename);
+        },
+      }),
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
+          return callback(new Error('Only image files are allowed!'), false);
+        }
+        callback(null, true);
+      },
+    }),
+  )
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updatePackageDto: UpdatePackageDto,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
+    if (file) {
+      updatePackageDto.photoUrl = `uploads/${file.filename}`;
+    }
     return this.packagesService.update(id, updatePackageDto);
   }
 
@@ -172,5 +213,14 @@ export class PackagesController {
     @Body() problemDto: ReportProblemDto,
   ) {
     return this.packagesService.reportProblem(id, problemDto.description);
+  }
+
+  @ApiOperation({ summary: 'Rozwiązanie problemu z paczką' })
+  @Roles(UserRole.RECEPTIONIST, UserRole.ADMIN)
+  @Put(':id/resolve-problem')
+  resolveProblem(
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.packagesService.resolveProblem(id);
   }
 }
