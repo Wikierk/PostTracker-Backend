@@ -46,7 +46,7 @@ export class UsersController {
   }
 
   @ApiOperation({ summary: 'Pobranie listy wszystkich pracowników (Admin)' })
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.RECEPTIONIST)
   @Get()
   findAll() {
     return this.usersService.findAll();
