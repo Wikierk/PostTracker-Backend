@@ -10,6 +10,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { PickupPointsModule } from './pickup-points/pickup-points.module';
 import { PickupPoint } from './pickup-points/entities/pickup-point.entity';
+import { SeederModule } from './seeder/seeder.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { PickupPoint } from './pickup-points/entities/pickup-point.entity';
     PackagesModule,
     AuthModule,
     PickupPointsModule,
+    SeederModule,
   ],
 })
 export class AppModule {}
